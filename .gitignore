@@ -1,7 +1,11 @@
-dist
+dist/
 
 # Mac
 .DS_Store
 
 # VSCode
-.vscode
+/.vscode/
+
+# Jetbrains
+/.idea/
+

@@ -1,4 +1,4 @@
-module github.com/mattermost/mattermost-plugin-starter-template
+module github.com/imc/mattermost-plugin-pingboard
 
 go 1.12
 
