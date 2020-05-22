@@ -10,7 +10,7 @@ import (
 	"github.com/go-resty/resty/v2"
 )
 
-func (p *Plugin) getResult(response *resty.Response, err error, description string, result interface{}, validate func() bool) bool {
+func (p *Plugin) pingboardResponse(response *resty.Response, err error, description string, result interface{}, validate func() bool) bool {
 	if err != nil {
 		p.API.LogError("Failed to obtain "+description, "error", err)
 		return false
@@ -32,12 +32,23 @@ func (p *Plugin) getResult(response *resty.Response, err error, description stri
 }
 
 func (p *Plugin) refreshData() {
+	p.refreshLock.Lock()
+	defer p.refreshLock.Unlock()
+
+	if p.refreshTimer == nil {
+		return
+	}
+	p.refreshTimer.Stop()
+
 	config := p.getConfiguration()
 	if config.PingboardApiId == "" || config.PingboardApiSecret == "" {
 		p.API.LogInfo("No Pingboard client configuration")
+		// do not schedule more attempts (config change will already trigger a refresh)
 		return
 	}
 
+	// always schedule a later attempt even if we fail with errors below
+	p.refreshTimer = time.AfterFunc(time.Duration(6) * time.Hour, p.refreshData)
 	p.API.LogInfo("Refreshing data...")
 
 	client := resty.New().
@@ -52,14 +63,11 @@ func (p *Plugin) refreshData() {
 		SetBody(fmt.Sprintf("{\"client_id\": \"%s\", \"client_secret\": \"%s\"}", config.PingboardApiId, config.PingboardApiSecret)).
 		Post("https://app.pingboard.com/oauth/token")
 	tokenResult := credentialsResponse{}
-	if !p.getResult(response, err, "token", &tokenResult, func() bool {
+	if !p.pingboardResponse(response, err, "token", &tokenResult, func() bool {
 		return tokenResult.Token != "" && tokenResult.SecondsRemaining != 0
 	}) {
 		return
 	}
-
-	expires := time.Now().Add(time.Duration(tokenResult.SecondsRemaining) * time.Second)
-	p.API.LogInfo("Got token", "expires", expires)
 
 	client = client.SetAuthToken(tokenResult.Token)
 
@@ -73,7 +81,7 @@ func (p *Plugin) refreshData() {
 	companiesResult := companiesResponse{}
 	response, err = client.R().
 		Get("https://app.pingboard.com/api/v2/companies/my_company")
-	if !p.getResult(response, err, "companies", &companiesResult, func() bool {
+	if !p.pingboardResponse(response, err, "companies", &companiesResult, func() bool {
 		return len(companiesResult.Companies) == 1
 	}) {
 		return
@@ -106,7 +114,7 @@ func (p *Plugin) refreshData() {
 		response, err = client.R().
 			SetQueryParams(map[string]string{"page_size": "200", "page": fmt.Sprintf("%d", page)}).
 			Get("https://app.pingboard.com/api/v2/users")
-		if !p.getResult(response, err, "users", &usersResult, func() bool {
+		if !p.pingboardResponse(response, err, "users", &usersResult, func() bool {
 			return usersResult.Meta.Users.Page == page && len(usersResult.Users) > 0
 		}) {
 			return
@@ -125,10 +133,5 @@ func (p *Plugin) refreshData() {
 		}
 	}
 
-	p.usersLock.Lock()
-	defer p.usersLock.Unlock()
-
 	p.usersByEmail = usersByEmail
-	p.lastRefresh = time.Now()
 }
-

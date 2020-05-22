@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/mattermost/mattermost-server/v5/model"
 	"github.com/mattermost/mattermost-server/v5/plugin"
 	"github.com/pkg/errors"
 )
@@ -19,9 +20,9 @@ type User struct {
 type Plugin struct {
 	plugin.MattermostPlugin
 	configurationLock sync.RWMutex
+	refreshLock       sync.RWMutex
 	configuration     *configuration
-	usersLock         sync.RWMutex
-	lastRefresh       time.Time
+	refreshTimer      *time.Timer
 	usersByEmail      map[string]User
 }
 
@@ -39,6 +40,14 @@ func (p *Plugin) OnConfigurationChange() error {
 	return nil
 }
 
+func (p *Plugin) UserHasBeenCreated(c *plugin.Context, user *model.User) {
+	if c.UserAgent == "" {
+		return
+	}
+	p.refreshData()
+}
+
 func (p *Plugin) OnActivate() error {
+	p.refreshTimer = time.AfterFunc(time.Duration(5) * time.Second, p.refreshData)
 	return nil
 }
