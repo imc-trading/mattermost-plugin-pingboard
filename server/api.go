@@ -8,7 +8,7 @@ import (
 	"github.com/mattermost/mattermost-server/v5/plugin"
 )
 
-func (p *Plugin) apiError(w http.ResponseWriter, statusCode int, message string) {
+func (p *Plugin) writeApiError(w http.ResponseWriter, statusCode int, message string) {
 	type Error struct {
 		Error string `json:"error"`
 	}
@@ -24,38 +24,47 @@ func (p *Plugin) apiError(w http.ResponseWriter, statusCode int, message string)
 	}
 }
 
-func (p *Plugin) apiSendUser(w http.ResponseWriter, v interface{}) {
+func (p *Plugin) writeApiResponse(w http.ResponseWriter, v interface{}) {
 	b, err := json.Marshal(v)
 	if err != nil {
 		p.API.LogError("Failed to encode API result", "error", err)
-		p.apiError(w, http.StatusInternalServerError, "failed to encode result")
+		p.writeApiError(w, http.StatusInternalServerError, "failed to encode result")
 		return
 	}
 	if _, err := w.Write(b); err != nil {
 		p.API.LogError("Failed to write API result", "error", err)
-		p.apiError(w, http.StatusInternalServerError, "failed to write result")
+		p.writeApiError(w, http.StatusInternalServerError, "failed to write result")
 		return
 	}
 }
 
-func (p *Plugin) apiGetUser(w http.ResponseWriter, r *http.Request) {
+func (p *Plugin) handleGetUser(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.NotFound(w, r)
+		return
+	}
+
 	emails, ok := r.URL.Query()["email"]
 	if !ok || len(emails) != 1 {
-		p.apiError(w, http.StatusBadRequest, "specify one email address")
+		p.API.LogDebug("Returning bad request (malformed emails param)", "emails", emails)
+		p.writeApiError(w, http.StatusBadRequest, "specify one email address")
 		return
 	}
 	email := strings.ToLower(emails[0])
-	type EmptyUser struct {}
+
 	if p.usersByEmail == nil {
-		p.apiSendUser(w, EmptyUser{})
+		p.API.LogDebug("Returning not found for " + email + " (no pingboard data)")
+		http.NotFound(w, r)
 		return
 	}
 	user, found := p.usersByEmail[email]
 	if !found {
-		p.apiSendUser(w, EmptyUser{})
+		p.API.LogDebug("Returning not found for " + email + " (unknown pingboard user)")
+		http.NotFound(w, r)
 		return
 	}
-	p.apiSendUser(w, user)
+	p.API.LogDebug("Returning user data for " + email)
+	p.writeApiResponse(w, user)
 }
 
 func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
@@ -68,7 +77,7 @@ func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Req
 
 	switch path := r.URL.Path; path {
 	case "/user":
-		p.apiGetUser(w, r)
+		p.handleGetUser(w, r)
 	default:
 		http.NotFound(w, r)
 	}
