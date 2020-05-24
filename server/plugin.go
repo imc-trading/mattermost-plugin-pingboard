@@ -48,6 +48,6 @@ func (p *Plugin) UserHasBeenCreated(c *plugin.Context, user *model.User) {
 }
 
 func (p *Plugin) OnActivate() error {
-	p.refreshTimer = time.AfterFunc(time.Duration(5) * time.Second, p.refreshData)
+	p.refreshTimer = time.AfterFunc(time.Duration(5)*time.Second, p.refreshData)
 	return nil
 }

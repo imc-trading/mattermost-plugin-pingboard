@@ -12,20 +12,20 @@ import (
 
 func (p *Plugin) pingboardResponse(response *resty.Response, err error, description string, result interface{}, validate func() bool) bool {
 	if err != nil {
-		p.API.LogError("Failed to obtain "+description, "error", err)
+		p.API.LogError("Failed to obtain " + description, "error", err)
 		return false
 	}
 	if response.StatusCode() != http.StatusOK {
-		p.API.LogError("Failed to obtain "+description, "status", response.Status, "body", response)
+		p.API.LogError("Failed to obtain " + description, "status", response.Status, "body", response)
 		return false
 	}
 	err = json.Unmarshal(response.Body(), &result)
 	if err != nil {
-		p.API.LogError("Failed to decode response for "+description, "error", err, "body", response)
+		p.API.LogError("Failed to decode response for " + description, "error", err)
 		return false
 	}
 	if !validate() {
-		p.API.LogError("Failed to extract valid fields for "+description, "error", err, "body", response)
+		p.API.LogError("Failed to extract valid fields for " + description)
 		return false
 	}
 	return true
@@ -48,12 +48,13 @@ func (p *Plugin) refreshData() {
 	}
 
 	// always schedule a later attempt even if we fail with errors below
-	p.refreshTimer = time.AfterFunc(time.Duration(6) * time.Hour, p.refreshData)
+	p.refreshTimer = time.AfterFunc(time.Duration(6)*time.Hour, p.refreshData)
 	p.API.LogInfo("Refreshing data...")
 
 	client := resty.New().
 		SetHeader("Content-Type", "application/json")
 
+	// get auth token using client credentials
 	type credentialsResponse struct {
 		Token            string `json:"access_token"`
 		SecondsRemaining int    `json:"expires_in"`
@@ -71,6 +72,7 @@ func (p *Plugin) refreshData() {
 
 	client = client.SetAuthToken(tokenResult.Token)
 
+	// get details of api user's company
 	type companyResponse struct {
 		Name   string `json:"name"`
 		Domain string `json:"subdomain"`
@@ -89,6 +91,7 @@ func (p *Plugin) refreshData() {
 	companyResult := companiesResult.Companies[0]
 	p.API.LogInfo(fmt.Sprintf("Got company %s with sub-domain %s", companyResult.Name, companyResult.Domain))
 
+	// get details of all users
 	type usersMetaResponse struct {
 		Page      int `json:"page"`
 		PageCount int `json:"page_count"`
