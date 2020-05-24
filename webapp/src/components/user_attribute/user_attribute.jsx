@@ -21,13 +21,12 @@ export default class UserAttribute extends React.PureComponent {
         if (pingboardInfo == null) {
             return null;
         }
+        const description = pingboardInfo.job_title + (pingboardInfo.department ? ` (${pingboardInfo.department})` : '');
         return (
             <div>
-                <div key={`${pluginId}_url`}>
-                    {messageHtmlToComponent(`↪ <a href=${pingboardInfo.url} target="_blank">Pingboard profile</a>`)}
-                </div>
                 <div key={`${pluginId}_job_title`}>
-                    {messageHtmlToComponent(`👤 ${pingboardInfo.job_title}`)}
+                    {messageHtmlToComponent(
+                        `<a href=${pingboardInfo.url} target="_blank">👤 ${description}</a>`)}
                 </div>
                 <div key={`${pluginId}_start_date`}>
                     {messageHtmlToComponent(`🎂 ${pingboardInfo.start_date}`)}

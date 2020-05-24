@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -12,16 +14,16 @@ import (
 
 func (p *Plugin) pingboardResponse(response *resty.Response, err error, description string, result interface{}, validate func() bool) bool {
 	if err != nil {
-		p.API.LogError("Failed to obtain " + description, "error", err)
+		p.API.LogError("Failed to obtain "+description, "error", err)
 		return false
 	}
 	if response.StatusCode() != http.StatusOK {
-		p.API.LogError("Failed to obtain " + description, "status", response.Status, "body", response)
+		p.API.LogError("Failed to obtain "+description, "status", response.Status, "body", response)
 		return false
 	}
 	err = json.Unmarshal(response.Body(), &result)
 	if err != nil {
-		p.API.LogError("Failed to decode response for " + description, "error", err)
+		p.API.LogError("Failed to decode response for "+description, "error", err)
 		return false
 	}
 	if !validate() {
@@ -96,23 +98,36 @@ func (p *Plugin) refreshData() {
 		Page      int `json:"page"`
 		PageCount int `json:"page_count"`
 	}
+	type userLinks struct {
+		DepartmentIds []string `json:"departments"`
+		LocationIds   []string `json:"locations"`
+	}
 	type metaResponse struct {
 		Users usersMetaResponse `json:"users"`
 	}
 	type userResponse struct {
-		// TODO get location also
-		Id        string `json:"id"`
-		StartDate string `json:"start_date"`
-		Email     string `json:"email"`
-		Phone     string `json:"office_phone"`
-		JobTitle  string `json:"job_title"`
+		Id        string    `json:"id"`
+		StartDate string    `json:"start_date"`
+		Email     string    `json:"email"`
+		Phone     string    `json:"office_phone"`
+		JobTitle  string    `json:"job_title"`
+		Links     userLinks `json:"links"`
 	}
 	type usersResponse struct {
 		Users []userResponse `json:"users"`
 		Meta  metaResponse   `json:"meta"`
 	}
-	usersResult := usersResponse{}
+	type groupResponse struct {
+		Id   string `json:"id"`
+		Name string `json:"name"`
+	}
+	type groupsResponse struct {
+		Groups []groupResponse `json:"groups"`
+	}
 	usersByEmail := map[string]User{}
+	departmentsById := map[string]string{}
+	usersResult := usersResponse{}
+	dateExpr := regexp.MustCompile(`([0-9]{4})-([0-9]{2})-([0-9]{2})`)
 	for page := 1; usersResult.Meta.Users.PageCount == 0 || page <= usersResult.Meta.Users.PageCount; page += 1 {
 		response, err = client.R().
 			SetQueryParams(map[string]string{"page_size": "200", "page": fmt.Sprintf("%d", page)}).
@@ -126,12 +141,42 @@ func (p *Plugin) refreshData() {
 		for _, user := range usersResult.Users {
 			p.API.LogDebug(fmt.Sprintf("%s: id %s, started %s, phone %s, title %s",
 				user.Email, user.Id, user.StartDate, user.Phone, user.JobTitle))
+			department := ""
+			if user.Links.DepartmentIds != nil && len(user.Links.DepartmentIds) >= 1 {
+				departmentId := user.Links.DepartmentIds[0]
+				firstDepartment, found := departmentsById[departmentId]
+				if !found {
+					response, err = client.R().
+						Get(fmt.Sprintf("https://app.pingboard.com/api/v2/groups/%s", departmentId))
+					departmentResult := groupsResponse{}
+					if !p.pingboardResponse(response, err, "department", &departmentResult, func() bool {
+						return len(departmentResult.Groups) == 1 && departmentResult.Groups[0].Id == departmentId
+					}) {
+						return
+					}
+					firstDepartment = departmentResult.Groups[0].Name
+					departmentsById[departmentId] = firstDepartment
+					p.API.LogInfo(fmt.Sprintf("Got department %s", firstDepartment))
+				}
+				department = firstDepartment
+			}
+			dateParts := dateExpr.FindStringSubmatch(user.StartDate)
+			if dateParts == nil {
+				p.API.LogError("Failed to parse date: " + user.StartDate)
+				return
+			}
+			startYear, _ := strconv.Atoi(dateParts[1])
+			startMonth, _ := strconv.Atoi(dateParts[2])
+			startDay, _ := strconv.Atoi(dateParts[3])
 			usersByEmail[strings.ToLower(user.Email)] = User{
-				Id:        user.Id,
-				Url:       fmt.Sprintf("https://%s.pingboard.com/users/%s", companyResult.Domain, user.Id),
-				StartDate: user.StartDate,
-				Phone:     user.Phone,
-				JobTitle:  user.JobTitle,
+				Id:         user.Id,
+				Url:        fmt.Sprintf("https://%s.pingboard.com/users/%s", companyResult.Domain, user.Id),
+				StartYear:  startYear,
+				StartMonth: startMonth,
+				StartDay:   startDay,
+				Phone:      user.Phone,
+				JobTitle:   user.JobTitle,
+				Department: department,
 			}
 		}
 	}

@@ -10,11 +10,12 @@ import (
 )
 
 type User struct {
-	Id        string `json:"id"`
-	Url       string `json:"url"`
-	StartDate string `json:"start_date"`
-	Phone     string `json:"phone"`
-	JobTitle  string `json:"job_title"`
+	Id         string `json:"id"`
+	Url        string `json:"url"`
+	StartDate  string `json:"start_date"`
+	Phone      string `json:"phone"`
+	JobTitle   string `json:"job_title"`
+	Department string `json:"department"`
 }
 
 type Plugin struct {
