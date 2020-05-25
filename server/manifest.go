@@ -13,8 +13,8 @@ var manifest *model.Manifest
 const manifestStr = `
 {
   "id": "com.imc.mattermost-plugin-pingboard",
-  "name": "Pingboard Plugin",
-  "description": "This plugin adds some basic information from Pingboard to the UI.",
+  "name": "Pingboard",
+  "description": "Adds information from Pingboard to user popover.",
   "version": "0.0.1",
   "min_server_version": "5.12.0",
   "server": {
