@@ -154,9 +154,10 @@ func (p *Plugin) refreshData() {
 					}) {
 						return
 					}
+					p.API.LogDebug(fmt.Sprintf("department %s: %s",
+						departmentId, departmentResult.Groups[0].Name))
 					firstDepartment = departmentResult.Groups[0].Name
 					departmentsById[departmentId] = firstDepartment
-					p.API.LogInfo(fmt.Sprintf("Got department %s", firstDepartment))
 				}
 				department = firstDepartment
 			}
