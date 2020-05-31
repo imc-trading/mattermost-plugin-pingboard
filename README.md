@@ -6,8 +6,10 @@ it on the user popover card.
 ## Features
 
 If data is found for the user, the user's popover card is extended with:
-* Job title and department, with hyperlink to user's Pingboard profile
-* Start date and phone number
+* Job title and department
+* Years/months since start date
+* Phone number
+* Link to user's Pingboard profile
 
 ![Screenshot](screenshot.png)
 

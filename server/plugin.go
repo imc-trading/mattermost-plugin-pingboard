@@ -12,7 +12,9 @@ import (
 type User struct {
 	Id         string `json:"id"`
 	Url        string `json:"url"`
-	StartDate  string `json:"start_date"`
+	StartYear  int    `json:"start_year"`
+	StartMonth int    `json:"start_month"`
+	StartDay   int    `json:"start_day"`
 	Phone      string `json:"phone"`
 	JobTitle   string `json:"job_title"`
 	Department string `json:"department"`
