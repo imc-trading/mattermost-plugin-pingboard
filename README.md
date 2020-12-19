@@ -9,22 +9,23 @@ If data is found for the user, the user's popover card is extended with:
 * Job title and department
 * Years/months since start date
 * Phone number
+* @-mention for manager (if manager was also found as a mattermost user)
 * Link to user's Pingboard profile
 
 ![Screenshot](screenshot.png)
 
 ## Pre-requisites
 
-The plugin matches users based on (lower-case) email address, so this must match
-in Pingboard and Mattermost.
+The plugin matches users based on email address, so this must match
+in Pingboard and Mattermost. The email addresses are first normalised
+by stripping out all characters except letters, digits and dots, and
+then compared as lowercase - so `a-Strange.Email+address@somewhere.com`
+will match `astrange.emailaddress@somewhere.com`.
 
 Create a client ID for Pingboard with read-only access to user data
 and note the client ID and client secret.
 
-**Note**: information is collected for every Pingboard user accessible to the
-client (even if they do not have a Mattermost account) and could be seen by authenticated
-Mattermost users via the plugin's http endpoint. Before using this plugin
-you should be comfortable with the users' data being visible in this way.
+**Note**: information for any Mattermost user
 
 ## Configuration
 
@@ -40,13 +41,12 @@ Configuration in `config.json` is as follows:
 
 ## Implementation notes
 
-The server plugin collects information on the Pingboard client's company
-(to get the right sub-domain for the user's profile URL),
-and all users visible to the client, as well as the name of any group listed as the first department
-for each user. This is held in memory, indexed by user email address.
-It will attempt to fetch this information every 6 hours.
-The information for a user can then be accessed as JSON via the plugin's http endpoint
-by querying for their email address.
-
-The client plugin looks up the user's information via the server plugin's http endpoint every time
-the popover card is opened.
+* Pingboard is queried for company information (for inserting sub-domain into pingboard link URLs),
+  and all known users. The first valid group listed under the user's departments is also looked up
+  to get the department name.
+* Pingboard users are then matched by email address against mattermost users. The email address
+  match ignores all characters except letters, digits and dots, and compares in lowercase.
+* The resulting data is held in memory in the server plugin and fetched again every 6 hours, or
+  when a new user is created.
+* The client looks up information for a user by username via the plugin's internal http endpoint.
+  The information is retrieved from the server every time a popover is created.

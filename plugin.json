@@ -2,7 +2,7 @@
     "id": "com.imc.mattermost-plugin-pingboard",
     "name": "Pingboard",
     "description": "Adds information from Pingboard to user popover.",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "min_server_version": "5.12.0",
     "server": {
         "executables": {

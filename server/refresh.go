@@ -1,36 +1,158 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/go-resty/resty/v2"
+	"github.com/mattermost/mattermost-server/v5/model"
+
+	"github.com/imc/mattermost-plugin-pingboard/server/pingboard"
 )
 
-func (p *Plugin) pingboardResponse(response *resty.Response, err error, description string, result interface{}, validate func() bool) bool {
-	if err != nil {
-		p.API.LogError("Failed to obtain "+description, "error", err)
-		return false
+type pingboardData struct {
+	company         *pingboard.Company
+	usersById       map[string]pingboard.User
+}
+
+var dateExpr = regexp.MustCompile(`([0-9]{4})-([0-9]{2})-([0-9]{2})`)
+
+var emailRetainedChars = regexp.MustCompile(`[^a-z0-9@.]`)
+
+// Remove special characters from emails and flip to lowercase; this helps to ensure
+// that mattermost and pingboard agree on the email string. So the following
+// email addresses are considered a match:
+// Some-Body.with+Chars@Domain+123.com
+// somebody.withchars@domain123.com
+func normalisedEmail(email string) string {
+	return emailRetainedChars.ReplaceAllString(strings.ToLower(email), "")
+}
+
+func (p *Plugin) getMattermostUsernamesByNormalisedEmail() map[string]string {
+	mmUsernamesByNormalisedEmail := map[string]string{}
+
+	page := 0
+	for {
+		mmUsers, err := p.API.GetUsers(&model.UserGetOptions{
+			Page: page,
+			PerPage: 500,
+		})
+		if err != nil {
+			p.API.LogError("Failed to get mattermost users", err)
+		}
+		if len(mmUsers) == 0 {
+			break
+		}
+		p.API.LogInfo(fmt.Sprintf("Scan mattermost users: got %d users (page %d)", len(mmUsers), page))
+		page += 1
+		for _, mattermostUser := range mmUsers {
+			mmEmail := normalisedEmail(mattermostUser.Email)
+			if _, exists := mmUsernamesByNormalisedEmail[mmEmail]; exists {
+				p.API.LogError(fmt.Sprintf("Found multiple mattermost users with (normalised) email %s", mmEmail))
+				return nil
+			}
+			p.API.LogDebug(fmt.Sprintf("Found mattermost user %s with normalised email %s",
+				mattermostUser.Username, mmEmail))
+			mmUsernamesByNormalisedEmail[mmEmail] = mattermostUser.Username
+		}
 	}
-	if response.StatusCode() != http.StatusOK {
-		p.API.LogError("Failed to obtain "+description, "status", response.Status, "body", response)
-		return false
+
+	return mmUsernamesByNormalisedEmail
+}
+
+func (p *Plugin) fetchPingboardData(apiID string, apiSecret string) *pingboardData {
+	pbClient := pingboard.NewClient(p.API, apiID, apiSecret)
+
+	if pbClient == nil {
+		return nil
 	}
-	err = json.Unmarshal(response.Body(), &result)
-	if err != nil {
-		p.API.LogError("Failed to decode response for "+description, "error", err)
-		return false
+
+	company := pbClient.FetchCompany()
+	if company == nil {
+		return nil
 	}
-	if !validate() {
-		p.API.LogError("Failed to extract valid fields for " + description)
-		return false
+
+	pbUsersById := pbClient.FetchUsers()
+	if pbUsersById == nil {
+		return nil
 	}
-	return true
+
+	return &pingboardData{
+		company:         company,
+		usersById:       pbUsersById,
+	}
+}
+
+func (p *Plugin) resolveUsers(pbData *pingboardData, mmUsernamesByNormalisedEmail map[string]string) map[string]User {
+	usersByUsername := map[string]User{}
+	pbNormalisedEmails := map[string]bool{}
+	for _, pbUser := range pbData.usersById {
+		pbUserNormalisedEmail := normalisedEmail(pbUser.Email)
+
+		mmUsername, found := mmUsernamesByNormalisedEmail[pbUserNormalisedEmail]
+		if !found {
+			p.API.LogDebug(fmt.Sprintf("Ignoring Pingboard user with normalised email %s (no matching mattermost user)",
+				pbUserNormalisedEmail))
+			continue
+		}
+
+		if _, exists := pbNormalisedEmails[pbUserNormalisedEmail]; exists {
+			p.API.LogError(fmt.Sprintf("Found multiple Pingboard users with (normalised) email %s",
+				pbUserNormalisedEmail))
+			return nil
+		}
+		pbNormalisedEmails[pbUserNormalisedEmail] = true
+
+		p.API.LogDebug(fmt.Sprintf("Recording data for user %s matched by normalised email %s",
+			mmUsername, pbUserNormalisedEmail))
+
+		dateParts := dateExpr.FindStringSubmatch(pbUser.StartDate)
+		if dateParts == nil {
+			p.API.LogError(fmt.Sprintf("Failed to parse date %s",
+				pbUser.StartDate))
+			return nil
+		}
+		startYear, _ := strconv.Atoi(dateParts[1])
+		startMonth, _ := strconv.Atoi(dateParts[2])
+		startDay, _ := strconv.Atoi(dateParts[3])
+
+		manager := ""
+		managerId := pbUser.ReportsToId
+		managerUser, found := pbData.usersById[managerId]
+		if found {
+			managerEmail := normalisedEmail(managerUser.Email)
+			manager, found = mmUsernamesByNormalisedEmail[managerEmail]
+			if found {
+				p.API.LogDebug(fmt.Sprintf("User %s matched to manager %s by normalised email %s",
+					mmUsername, manager, managerEmail))
+			} else {
+				p.API.LogDebug(fmt.Sprintf("User %s has manager with unmatched normalised email %s",
+					mmUsername, managerEmail))
+			}
+		} else {
+			p.API.LogDebug(fmt.Sprintf("User %s has manager with unknown Pingboard ID %s",
+				mmUsername, managerId))
+		}
+
+		newUser := User{
+			Id:         pbUser.Id,
+			Email:      pbUser.Email,
+			Url:        fmt.Sprintf("https://%s.pingboard.com/users/%s", pbData.company.Domain, pbUser.Id),
+			StartYear:  startYear,
+			StartMonth: startMonth,
+			StartDay:   startDay,
+			Phone:      pbUser.Phone,
+			JobTitle:   pbUser.JobTitle,
+			Department: pbUser.Department,
+			Manager:    manager,
+		}
+
+		usersByUsername[mmUsername] = newUser
+	}
+
+	return usersByUsername
 }
 
 func (p *Plugin) refreshData() {
@@ -51,136 +173,26 @@ func (p *Plugin) refreshData() {
 
 	// always schedule a later attempt even if we fail with errors below
 	p.refreshTimer = time.AfterFunc(time.Duration(6)*time.Hour, p.refreshData)
+
 	p.API.LogInfo("Refreshing data...")
 
-	client := resty.New().
-		SetHeader("Content-Type", "application/json")
-
-	// get auth token using client credentials
-	type credentialsResponse struct {
-		Token            string `json:"access_token"`
-		SecondsRemaining int    `json:"expires_in"`
-	}
-	response, err := client.R().
-		SetQueryParams(map[string]string{"grant_type": "client_credentials"}).
-		SetBody(fmt.Sprintf("{\"client_id\": \"%s\", \"client_secret\": \"%s\"}", config.PingboardApiId, config.PingboardApiSecret)).
-		Post("https://app.pingboard.com/oauth/token")
-	tokenResult := credentialsResponse{}
-	if !p.pingboardResponse(response, err, "token", &tokenResult, func() bool {
-		return tokenResult.Token != "" && tokenResult.SecondsRemaining != 0
-	}) {
+	// Index all mattermost users by normalised email address
+	mmUsernamesByNormalisedEmail := p.getMattermostUsernamesByNormalisedEmail()
+	if mmUsernamesByNormalisedEmail == nil {
 		return
 	}
 
-	client = client.SetAuthToken(tokenResult.Token)
-
-	// get details of api user's company
-	type companyResponse struct {
-		Name   string `json:"name"`
-		Domain string `json:"subdomain"`
-	}
-	type companiesResponse struct {
-		Companies []companyResponse `json:"companies"`
-	}
-	companiesResult := companiesResponse{}
-	response, err = client.R().
-		Get("https://app.pingboard.com/api/v2/companies/my_company")
-	if !p.pingboardResponse(response, err, "companies", &companiesResult, func() bool {
-		return len(companiesResult.Companies) == 1
-	}) {
+	// Get data from pingboard
+	pbData := p.fetchPingboardData(config.PingboardApiId, config.PingboardApiSecret)
+	if pbData == nil {
 		return
 	}
-	companyResult := companiesResult.Companies[0]
-	p.API.LogInfo(fmt.Sprintf("Got company %s with sub-domain %s", companyResult.Name, companyResult.Domain))
 
-	// get details of all users
-	type usersMetaResponse struct {
-		Page      int `json:"page"`
-		PageCount int `json:"page_count"`
-	}
-	type userLinks struct {
-		DepartmentIds []string `json:"departments"`
-		LocationIds   []string `json:"locations"`
-	}
-	type metaResponse struct {
-		Users usersMetaResponse `json:"users"`
-	}
-	type userResponse struct {
-		Id        string    `json:"id"`
-		StartDate string    `json:"start_date"`
-		Email     string    `json:"email"`
-		Phone     string    `json:"office_phone"`
-		JobTitle  string    `json:"job_title"`
-		Links     userLinks `json:"links"`
-	}
-	type usersResponse struct {
-		Users []userResponse `json:"users"`
-		Meta  metaResponse   `json:"meta"`
-	}
-	type groupResponse struct {
-		Id   string `json:"id"`
-		Name string `json:"name"`
-	}
-	type groupsResponse struct {
-		Groups []groupResponse `json:"groups"`
-	}
-	usersByEmail := map[string]User{}
-	departmentsById := map[string]string{}
-	usersResult := usersResponse{}
-	dateExpr := regexp.MustCompile(`([0-9]{4})-([0-9]{2})-([0-9]{2})`)
-	for page := 1; usersResult.Meta.Users.PageCount == 0 || page <= usersResult.Meta.Users.PageCount; page += 1 {
-		response, err = client.R().
-			SetQueryParams(map[string]string{"page_size": "200", "page": fmt.Sprintf("%d", page)}).
-			Get("https://app.pingboard.com/api/v2/users")
-		if !p.pingboardResponse(response, err, "users", &usersResult, func() bool {
-			return usersResult.Meta.Users.Page == page && len(usersResult.Users) > 0
-		}) {
-			return
-		}
-		p.API.LogInfo(fmt.Sprintf("Got %d users on page %d", len(usersResult.Users), page))
-		for _, user := range usersResult.Users {
-			p.API.LogDebug(fmt.Sprintf("%s: id %s, started %s, phone %s, title %s",
-				user.Email, user.Id, user.StartDate, user.Phone, user.JobTitle))
-			department := ""
-			if user.Links.DepartmentIds != nil && len(user.Links.DepartmentIds) >= 1 {
-				departmentId := user.Links.DepartmentIds[0]
-				firstDepartment, found := departmentsById[departmentId]
-				if !found {
-					response, err = client.R().
-						Get(fmt.Sprintf("https://app.pingboard.com/api/v2/groups/%s", departmentId))
-					departmentResult := groupsResponse{}
-					if !p.pingboardResponse(response, err, "department", &departmentResult, func() bool {
-						return len(departmentResult.Groups) == 1 && departmentResult.Groups[0].Id == departmentId
-					}) {
-						return
-					}
-					p.API.LogDebug(fmt.Sprintf("department %s: %s",
-						departmentId, departmentResult.Groups[0].Name))
-					firstDepartment = departmentResult.Groups[0].Name
-					departmentsById[departmentId] = firstDepartment
-				}
-				department = firstDepartment
-			}
-			dateParts := dateExpr.FindStringSubmatch(user.StartDate)
-			if dateParts == nil {
-				p.API.LogError("Failed to parse date: " + user.StartDate)
-				return
-			}
-			startYear, _ := strconv.Atoi(dateParts[1])
-			startMonth, _ := strconv.Atoi(dateParts[2])
-			startDay, _ := strconv.Atoi(dateParts[3])
-			usersByEmail[strings.ToLower(user.Email)] = User{
-				Id:         user.Id,
-				Url:        fmt.Sprintf("https://%s.pingboard.com/users/%s", companyResult.Domain, user.Id),
-				StartYear:  startYear,
-				StartMonth: startMonth,
-				StartDay:   startDay,
-				Phone:      user.Phone,
-				JobTitle:   user.JobTitle,
-				Department: department,
-			}
-		}
+	// Assemble final info by usernames
+	usersByUsername := p.resolveUsers(pbData, mmUsernamesByNormalisedEmail)
+	if usersByUsername == nil {
+		return
 	}
 
-	p.usersByEmail = usersByEmail
+	p.usersByUsername = usersByUsername
 }

@@ -9,18 +9,18 @@ import UserAttribute from './user_attribute.jsx';
 const REDUCER = `plugins-${pluginId}`;
 
 function mapStateToProps(state, ownProps) {
-    let email;
+    let username;
     let pingboardInfo;
     if (ownProps.user) {
-        email = ownProps.user.email;
-        const lastFetchResult = state[REDUCER].lastFetchResultByEmail[email];
+        username = ownProps.user.username;
+        const lastFetchResult = state[REDUCER].lastFetchResultByUsername[username];
         if (lastFetchResult) {
             pingboardInfo = lastFetchResult.pingboardInfo;
         }
     }
 
     return {
-        email,
+        username,
         pingboardInfo,
     };
 }

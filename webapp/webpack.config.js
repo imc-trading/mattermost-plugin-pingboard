@@ -9,12 +9,12 @@ module.exports = {
             'src',
             'node_modules',
         ],
-        extensions: ['*', '.js', '.jsx', '.ts', '.tsx'],
+        extensions: ['*', '.js', '.jsx'],
     },
     module: {
         rules: [
             {
-                test: /\.(js|jsx|ts|tsx)$/,
+                test: /\.(js|jsx)$/,
                 exclude: /node_modules/,
                 use: {
                     loader: 'babel-loader',

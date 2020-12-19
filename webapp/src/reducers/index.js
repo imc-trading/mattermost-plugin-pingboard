@@ -2,11 +2,11 @@ import {combineReducers} from 'redux';
 
 import ActionTypes from '../action_types';
 
-function lastFetchResultByEmail(state = {}, action) {
+function lastFetchResultByUsername(state = {}, action) {
     switch (action.type) {
     case ActionTypes.RECEIVED_PINGBOARD_INFO: {
         const nextState = {...state};
-        nextState[action.email] = action.fetchResult;
+        nextState[action.username] = action.fetchResult;
         return nextState;
     }
     default:
@@ -15,5 +15,5 @@ function lastFetchResultByEmail(state = {}, action) {
 }
 
 export default combineReducers({
-    lastFetchResultByEmail,
+    lastFetchResultByUsername,
 });

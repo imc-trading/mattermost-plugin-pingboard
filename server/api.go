@@ -44,26 +44,26 @@ func (p *Plugin) handleGetUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	emails, ok := r.URL.Query()["email"]
-	if !ok || len(emails) != 1 {
-		p.API.LogDebug("Returning bad request (malformed emails param)", "emails", emails)
-		p.writeApiError(w, http.StatusBadRequest, "specify one email address")
+	usernames, ok := r.URL.Query()["username"]
+	if !ok || len(usernames) != 1 {
+		p.API.LogDebug("Returning bad request (malformed username param)", "usernames", usernames)
+		p.writeApiError(w, http.StatusBadRequest, "specify one username")
 		return
 	}
-	email := strings.ToLower(emails[0])
+	username := strings.ToLower(usernames[0])
 
-	if p.usersByEmail == nil {
-		p.API.LogDebug("Returning not found for " + email + " (no pingboard data)")
+	if p.usersByUsername == nil {
+		p.API.LogDebug("Returning not found for " + username + " (no pingboard data)")
 		http.NotFound(w, r)
 		return
 	}
-	user, found := p.usersByEmail[email]
+	user, found := p.usersByUsername[username]
 	if !found {
-		p.API.LogDebug("Returning not found for " + email + " (unknown pingboard user)")
+		p.API.LogDebug("Returning not found for " + username + " (unknown pingboard user)")
 		http.NotFound(w, r)
 		return
 	}
-	p.API.LogDebug("Returning user data for " + email)
+	p.API.LogDebug("Returning user data for " + username)
 	p.writeApiResponse(w, user)
 }
 

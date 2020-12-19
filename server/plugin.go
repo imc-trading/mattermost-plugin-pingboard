@@ -11,6 +11,7 @@ import (
 
 type User struct {
 	Id         string `json:"id"`
+	Email      string `json:"email"` // the email address exactly as Pingboard had it
 	Url        string `json:"url"`
 	StartYear  int    `json:"start_year"`
 	StartMonth int    `json:"start_month"`
@@ -18,6 +19,7 @@ type User struct {
 	Phone      string `json:"phone"`
 	JobTitle   string `json:"job_title"`
 	Department string `json:"department"`
+	Manager    string `json:"manager"`
 }
 
 type Plugin struct {
@@ -26,7 +28,7 @@ type Plugin struct {
 	refreshLock       sync.RWMutex
 	configuration     *configuration
 	refreshTimer      *time.Timer
-	usersByEmail      map[string]User
+	usersByUsername   map[string]User
 }
 
 func (p *Plugin) OnConfigurationChange() error {

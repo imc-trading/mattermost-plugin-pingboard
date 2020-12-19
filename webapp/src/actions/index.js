@@ -1,16 +1,16 @@
 import Client from '../client';
 import ActionTypes from '../action_types';
 
-export function fetchAndStorePingboardInfo(email = '') {
+export function fetchAndStorePingboardInfo(username = '') {
     return async (dispatch) => {
         let pingboardInfo;
         try {
-            pingboardInfo = await Client.getPingboardInfo(email);
+            pingboardInfo = await Client.getPingboardInfo(username);
         } catch (error) {
             if (error.status === 404) {
                 return dispatch({
                     type: ActionTypes.RECEIVED_PINGBOARD_INFO,
-                    email,
+                    username,
                     fetchResult: {
                         pingboardInfo: null,
                     },
@@ -21,7 +21,7 @@ export function fetchAndStorePingboardInfo(email = '') {
 
         return dispatch({
             type: ActionTypes.RECEIVED_PINGBOARD_INFO,
-            email,
+            username,
             fetchResult: {
                 pingboardInfo,
             },
