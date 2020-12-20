@@ -31,12 +31,14 @@ and note the client ID and client secret.
 
 Configuration in `config.json` is as follows:
 ```json
+{
         "Plugins": {
             "com.imc.mattermost-plugin-pingboard": {
                 "pingboardApiId": "...",
                 "pingboardApiSecret": "..."
             }
-        },
+        }
+}
 ```
 
 ## Implementation notes

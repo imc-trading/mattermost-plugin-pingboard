@@ -67,7 +67,7 @@ func (p *Plugin) handleGetUser(w http.ResponseWriter, r *http.Request) {
 	p.writeApiResponse(w, user)
 }
 
-func (p *Plugin) ServeHTTP(c *plugin.Context, w http.ResponseWriter, r *http.Request) {
+func (p *Plugin) ServeHTTP(_ *plugin.Context, w http.ResponseWriter, r *http.Request) {
 	if userID := r.Header.Get("Mattermost-User-ID"); userID == "" {
 		http.Error(w, "Not authorized", http.StatusUnauthorized)
 		return

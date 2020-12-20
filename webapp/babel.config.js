@@ -18,7 +18,7 @@ const config = {
         }],
         ['@babel/preset-react', {
             useBuiltIns: true,
-        }]
+        }],
     ],
     plugins: [
         '@babel/plugin-proposal-class-properties',

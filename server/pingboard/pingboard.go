@@ -92,20 +92,23 @@ func NewClient(pluginAPI plugin.API, pingboardId string, pingboardSecret string)
 
 func (c *Client) pingboardResponse(response *resty.Response, err error, description string, result interface{}, validate func() bool) bool {
 	if err != nil {
-		c.pluginAPI.LogError("Failed to obtain "+description, "error", err)
+		c.pluginAPI.LogError(fmt.Sprintf("Failed to obtain %s", description),
+			"error", err)
 		return false
 	}
 	if response.StatusCode() != http.StatusOK {
-		c.pluginAPI.LogError("Failed to obtain "+description, "status", response.Status, "body", response)
+		c.pluginAPI.LogError(fmt.Sprintf("Failed to obtain %s", description),
+			"status", response.Status, "body", response)
 		return false
 	}
 	err = json.Unmarshal(response.Body(), &result)
 	if err != nil {
-		c.pluginAPI.LogError("Failed to decode response for "+description, "error", err)
+		c.pluginAPI.LogError(fmt.Sprintf("Failed to decode response for %s", description),
+			"error", err)
 		return false
 	}
 	if !validate() {
-		c.pluginAPI.LogError("Failed to extract valid fields for " + description)
+		c.pluginAPI.LogError(fmt.Sprintf("Failed to extract valid fields for %s", description))
 		return false
 	}
 	return true
@@ -161,11 +164,10 @@ func (c *Client) resolveDepartment(user userResponse, departmentsById map[string
 	return department
 }
 
-
 func (c *Client) FetchCompany() *Company {
-	companiesResult := companiesResponse{}
 	response, err := c.restClient.R().
 		Get("https://app.pingboard.com/api/v2/companies/my_company")
+	companiesResult := companiesResponse{}
 	if !c.pingboardResponse(response, err, "companies", &companiesResult, func() bool {
 		return len(companiesResult.Companies) == 1
 	}) {

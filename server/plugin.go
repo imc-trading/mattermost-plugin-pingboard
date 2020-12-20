@@ -45,7 +45,7 @@ func (p *Plugin) OnConfigurationChange() error {
 	return nil
 }
 
-func (p *Plugin) UserHasBeenCreated(c *plugin.Context, user *model.User) {
+func (p *Plugin) UserHasBeenCreated(c *plugin.Context, _ *model.User) {
 	if c.UserAgent == "" {
 		return
 	}
