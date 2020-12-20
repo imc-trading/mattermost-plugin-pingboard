@@ -183,17 +183,19 @@ func (c *Client) FetchUsers() map[string]User {
 	usersById := map[string]User{}
 	departmentsById := map[string]string{}
 
-	usersResult := usersResponse{}
-	for page := 1; usersResult.Meta.Users.PageCount == 0 || page <= usersResult.Meta.Users.PageCount; page += 1 {
+	pageCount := 0
+	for page := 1; pageCount == 0 || page <= pageCount; page += 1 {
 		response, err := c.restClient.R().
 			SetQueryParams(map[string]string{"page_size": "200", "page": fmt.Sprintf("%d", page)}).
 			Get("https://app.pingboard.com/api/v2/users")
+		usersResult := usersResponse{}
 		if !c.pingboardResponse(response, err, "users", &usersResult, func() bool {
 			return usersResult.Meta.Users.Page == page && len(usersResult.Users) > 0
 		}) {
 			return nil
 		}
 		c.pluginAPI.LogInfo(fmt.Sprintf("Pingboard query: got %d users (page %d)", len(usersResult.Users), page))
+		pageCount = usersResult.Meta.Users.PageCount
 		for _, user := range usersResult.Users {
 			department := c.resolveDepartment(user, departmentsById)
 			if department == "" {
@@ -202,13 +204,17 @@ func (c *Client) FetchUsers() map[string]User {
 			c.pluginAPI.LogDebug(fmt.Sprintf("Found Pingboard user with "+
 				"email %s, id %s, started %s, phone %s, title %s, manager id %d, department %s",
 				user.Email, user.Id, user.StartDate, user.Phone, user.JobTitle, user.ReportsToId, department))
+			reportsToId := "";
+			if user.ReportsToId != 0 {
+				reportsToId = strconv.Itoa(user.ReportsToId);
+			}
 			usersById[user.Id] = User{
 				Id:          user.Id,
 				StartDate:   user.StartDate,
 				Email:       user.Email,
 				Phone:       user.Phone,
 				JobTitle:    user.JobTitle,
-				ReportsToId: strconv.Itoa(user.ReportsToId),
+				ReportsToId: reportsToId,
 				Department:  department,
 			}
 		}

@@ -120,20 +120,20 @@ func (p *Plugin) resolveUsers(pbData *pingboardData, mmUsernamesByNormalisedEmai
 
 		manager := ""
 		managerId := pbUser.ReportsToId
-		managerUser, found := pbData.usersById[managerId]
-		if found {
-			managerEmail := normalisedEmail(managerUser.Email)
-			manager, found = mmUsernamesByNormalisedEmail[managerEmail]
-			if found {
-				p.API.LogDebug(fmt.Sprintf("User %s matched to manager %s by normalised email %s",
-					mmUsername, manager, managerEmail))
+		if managerId != "" {
+			if managerUser, found := pbData.usersById[managerId]; found {
+				managerEmail := normalisedEmail(managerUser.Email)
+				if manager, found = mmUsernamesByNormalisedEmail[managerEmail]; found {
+					p.API.LogDebug(fmt.Sprintf("User %s matched to manager %s by normalised email %s",
+						mmUsername, manager, managerEmail))
+				} else {
+					p.API.LogDebug(fmt.Sprintf("User %s has manager with unmatched normalised email %s",
+						mmUsername, managerEmail))
+				}
 			} else {
-				p.API.LogDebug(fmt.Sprintf("User %s has manager with unmatched normalised email %s",
-					mmUsername, managerEmail))
+				p.API.LogDebug(fmt.Sprintf("User %s has manager with unknown Pingboard ID %s",
+					mmUsername, managerId))
 			}
-		} else {
-			p.API.LogDebug(fmt.Sprintf("User %s has manager with unknown Pingboard ID %s",
-				mmUsername, managerId))
 		}
 
 		newUser := User{
