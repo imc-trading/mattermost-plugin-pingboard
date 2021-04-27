@@ -23,9 +23,12 @@ export default class UserAttribute extends React.PureComponent {
         if (pingboardInfo == null) {
             return null;
         }
-        const localDate = new Date();
-        const startDate = new Date(pingboardInfo.start_year, pingboardInfo.start_month - 1, pingboardInfo.start_day);
-        const tenure = describeTenure(startDate, localDate);
+        let tenure = '(unknown)';
+        if (pingboardInfo.start_year > 0) {
+            const localDate = new Date();
+            const startDate = new Date(pingboardInfo.start_year, pingboardInfo.start_month - 1, pingboardInfo.start_day);
+            tenure = describeTenure(startDate, localDate);
+        }
         const description = pingboardInfo.job_title + (pingboardInfo.department ? ` (${pingboardInfo.department})` : '');
         const manager = pingboardInfo.manager ? `@${pingboardInfo.manager}` : '(unknown manager)';
 

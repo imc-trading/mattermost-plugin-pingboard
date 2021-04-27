@@ -108,15 +108,15 @@ func (p *Plugin) resolveUsers(pbData *pingboardData, mmUsernamesByNormalisedEmai
 		p.API.LogDebug(fmt.Sprintf("Recording data for user %s matched by normalised email %s",
 			mmUsername, pbUserNormalisedEmail))
 
+		startYear := 0
+		startMonth := 0
+		startDay := 0
 		dateParts := dateExpr.FindStringSubmatch(pbUser.StartDate)
-		if dateParts == nil {
-			p.API.LogError(fmt.Sprintf("Failed to parse date %s",
-				pbUser.StartDate))
-			return nil
+		if dateParts != nil {
+			startYear, _ = strconv.Atoi(dateParts[1])
+			startMonth, _ = strconv.Atoi(dateParts[2])
+			startDay, _ = strconv.Atoi(dateParts[3])
 		}
-		startYear, _ := strconv.Atoi(dateParts[1])
-		startMonth, _ := strconv.Atoi(dateParts[2])
-		startDay, _ := strconv.Atoi(dateParts[3])
 
 		manager := ""
 		managerId := pbUser.ReportsToId
