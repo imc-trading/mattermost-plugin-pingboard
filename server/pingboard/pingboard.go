@@ -206,9 +206,9 @@ func (c *Client) FetchUsers() map[string]User {
 			c.pluginAPI.LogDebug(fmt.Sprintf("Found Pingboard user with "+
 				"email %s, id %s, started %s, phone %s, title %s, manager id %d, department %s",
 				user.Email, user.Id, user.StartDate, user.Phone, user.JobTitle, user.ReportsToId, department))
-			reportsToId := "";
+			reportsToId := ""
 			if user.ReportsToId != 0 {
-				reportsToId = strconv.Itoa(user.ReportsToId);
+				reportsToId = strconv.Itoa(user.ReportsToId)
 			}
 			usersById[user.Id] = User{
 				Id:          user.Id,
