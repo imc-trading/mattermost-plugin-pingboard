@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -165,7 +166,13 @@ func (p *Plugin) refreshData() {
 	p.refreshTimer.Stop()
 
 	config := p.getConfiguration()
-	if config.PingboardApiId == "" || config.PingboardApiSecret == "" {
+	clientId := config.PingboardApiId
+	clientSecret := os.Getenv("MM_PLUGIN_PINGBOARD_CLIENT_SECRET")
+	if clientSecret == "" {
+		clientSecret = config.PingboardApiSecret
+	}
+
+	if clientId == "" || clientSecret == "" {
 		p.API.LogInfo("No Pingboard client configuration")
 		// do not schedule more attempts (config change will already trigger a refresh)
 		return
@@ -183,7 +190,7 @@ func (p *Plugin) refreshData() {
 	}
 
 	// Get data from pingboard
-	pbData := p.fetchPingboardData(config.PingboardApiId, config.PingboardApiSecret)
+	pbData := p.fetchPingboardData(clientId, clientSecret)
 	if pbData == nil {
 		return
 	}

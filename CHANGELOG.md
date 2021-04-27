@@ -12,3 +12,9 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 - Normalise emails when matching mattermost and pingboard users
 - Add manager to popover
+
+## 0.0.3 - 2021-04-27
+
+- Expose client ID config via System Console 
+- Support setting client secret via environment variable 
+- Fix error for users with unknown start date

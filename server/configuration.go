@@ -5,8 +5,8 @@ import (
 )
 
 type configuration struct {
-	PingboardApiId     string
-	PingboardApiSecret string
+	PingboardApiId     string `json:"pingboardApiClientID"`
+	PingboardApiSecret string `json:"pingboardApiClientSecret"`
 }
 
 func (c *configuration) Clone() *configuration {

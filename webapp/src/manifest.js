@@ -5,7 +5,7 @@ const manifest = JSON.parse(`
     "id": "com.imc.mattermost-plugin-pingboard",
     "name": "Pingboard",
     "description": "Adds information from Pingboard to user popover.",
-    "version": "0.0.2",
+    "version": "0.0.3",
     "min_server_version": "5.12.0",
     "server": {
         "executables": {
@@ -20,8 +20,17 @@ const manifest = JSON.parse(`
     },
     "settings_schema": {
         "header": "",
-        "footer": "",
-        "settings": []
+        "footer": "Specify the client secret either in the config file (with key 'pingboardApiClientSecret'), or in environment var 'MM_PLUGIN_PINGBOARD_CLIENT_SECRET'.",
+        "settings": [
+            {
+                "key": "pingboardApiClientID",
+                "display_name": "Pingboard API client ID",
+                "type": "text",
+                "help_text": "",
+                "placeholder": "",
+                "default": null
+            }
+        ]
     }
 }
 `);
