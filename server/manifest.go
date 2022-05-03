@@ -16,11 +16,11 @@ const manifestStr = `
   "name": "Pingboard",
   "description": "Adds information from Pingboard to user popover.",
   "version": "0.0.3",
-  "min_server_version": "5.12.0",
+  "min_server_version": "5.39.0",
   "server": {
     "executables": {
-      "linux-amd64": "server/dist/plugin-linux-amd64",
       "darwin-amd64": "server/dist/plugin-darwin-amd64",
+      "linux-amd64": "server/dist/plugin-linux-amd64",
       "windows-amd64": "server/dist/plugin-windows-amd64.exe"
     },
     "executable": ""

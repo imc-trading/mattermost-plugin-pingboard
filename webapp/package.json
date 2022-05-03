@@ -63,10 +63,13 @@
   "dependencies": {
     "core-js": "3.6.5",
     "mattermost-redux": "5.27.0",
-    "prop-types": "^15.7.2",
+    "prop-types": "15.8.0",
     "react": "16.13.1",
+    "react-bootstrap": "0.32.4",
+    "react-dom": "16.8.6",
     "react-redux": "7.2.0",
-    "redux": "4.0.5"
+    "redux": "4.0.5",
+    "typescript": "3.9.6"
   },
   "jest": {
     "snapshotSerializers": [
