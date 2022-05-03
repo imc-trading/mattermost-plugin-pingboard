@@ -1,6 +1,6 @@
 {
   "name": "pingboard-plugin",
-  "version": "0.0.3",
+  "version": "1.0.0",
   "description": "This plugin adds some basic information from Pingboard to the UI.",
   "main": "src/index.js",
   "scripts": {

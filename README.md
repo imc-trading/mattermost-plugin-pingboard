@@ -25,21 +25,18 @@ will match `astrange.emailaddress@somewhere.com`.
 Create a client ID for Pingboard with read-only access to user data
 and note the client ID and client secret.
 
-**Note**: information for any Mattermost user
+**Note**: information for any Mattermost user that exists in Pingboard
+can then be seen by all users. If access to that information needs
+to be managed, the plugin may not be suitable.
 
 ## Configuration
 
-Configuration in `config.json` is as follows:
-```json
-{
-        "Plugins": {
-            "com.imc.mattermost-plugin-pingboard": {
-                "pingboardApiId": "...",
-                "pingboardApiSecret": "..."
-            }
-        }
-}
-```
+The Pingboard API client ID and secret should be supplied in the plugin
+config via the System Console.
+
+If preferred, the client secret can be left blank, and instead provided by
+setting the environment variable `MM_PLUGIN_PINGBOARD_CLIENT_SECRET` for the
+mattermost server.
 
 ## Implementation notes
 

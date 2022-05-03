@@ -15,7 +15,10 @@ const manifestStr = `
   "id": "com.imc.mattermost-plugin-pingboard",
   "name": "Pingboard",
   "description": "Adds information from Pingboard to user popover.",
-  "version": "0.0.3",
+  "homepage_url": "https://github.com/imc-trading/mattermost-plugin-pingboard",
+  "support_url": "https://github.com/imc-trading/mattermost-plugin-pingboard/issues",
+  "release_notes_url": "https://github.com/imc-trading/mattermost-plugin-pingboard/releases/tag/v1.0.0",
+  "version": "1.0.0",
   "min_server_version": "5.39.0",
   "server": {
     "executables": {
@@ -30,11 +33,19 @@ const manifestStr = `
   },
   "settings_schema": {
     "header": "",
-    "footer": "Specify the client secret either in the config file (with key 'pingboardApiClientSecret'), or in environment var 'MM_PLUGIN_PINGBOARD_CLIENT_SECRET'.",
+    "footer": "If you don't want to set the client secret here, you can leave it empty and instead set environment var 'MM_PLUGIN_PINGBOARD_CLIENT_SECRET'.",
     "settings": [
       {
         "key": "pingboardApiClientID",
         "display_name": "Pingboard API client ID",
+        "type": "text",
+        "help_text": "",
+        "placeholder": "",
+        "default": null
+      },
+      {
+        "key": "pingboardApiClientSecret",
+        "display_name": "Pingboard API client secret",
         "type": "text",
         "help_text": "",
         "placeholder": "",
