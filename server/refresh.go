@@ -46,7 +46,7 @@ func (p *Plugin) getMattermostUsernamesByNormalisedEmail() map[string]string {
 		if len(mmUsers) == 0 {
 			break
 		}
-		p.API.LogInfo(fmt.Sprintf("Scan mattermost users: got %d users (page %d)", len(mmUsers), page))
+		p.API.LogDebug(fmt.Sprintf("Scan mattermost users: got %d users (page %d)", len(mmUsers), page))
 		page += 1
 		for _, mattermostUser := range mmUsers {
 			mmEmail := normalisedEmail(mattermostUser.Email)
@@ -59,6 +59,7 @@ func (p *Plugin) getMattermostUsernamesByNormalisedEmail() map[string]string {
 			mmUsernamesByNormalisedEmail[mmEmail] = mattermostUser.Username
 		}
 	}
+	p.API.LogInfo(fmt.Sprintf("Found %d mattermost users", len(mmUsernamesByNormalisedEmail)))
 
 	return mmUsernamesByNormalisedEmail
 }

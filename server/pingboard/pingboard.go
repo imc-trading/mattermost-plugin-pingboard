@@ -174,7 +174,7 @@ func (c *Client) FetchCompany() *Company {
 		return nil
 	}
 	company := companiesResult.Companies[0]
-	c.pluginAPI.LogInfo(fmt.Sprintf("Pingboard query: Found company %s with sub-domain %s", company.Name, company.Domain))
+	c.pluginAPI.LogDebug(fmt.Sprintf("Pingboard query: Found company %s with sub-domain %s", company.Name, company.Domain))
 	return &Company{
 		Name:   company.Name,
 		Domain: company.Domain,
@@ -196,7 +196,7 @@ func (c *Client) FetchUsers() map[string]User {
 		}) {
 			return nil
 		}
-		c.pluginAPI.LogInfo(fmt.Sprintf("Pingboard query: got %d users (page %d)", len(usersResult.Users), page))
+		c.pluginAPI.LogDebug(fmt.Sprintf("Pingboard query: got %d users (page %d)", len(usersResult.Users), page))
 		pageCount = usersResult.Meta.Users.PageCount
 		for _, user := range usersResult.Users {
 			department := c.resolveDepartment(user, departmentsById)
@@ -221,6 +221,7 @@ func (c *Client) FetchUsers() map[string]User {
 			}
 		}
 	}
+	c.pluginAPI.LogInfo(fmt.Sprintf("Found %d Pingboard users", len(usersById)))
 
 	return usersById
 }
