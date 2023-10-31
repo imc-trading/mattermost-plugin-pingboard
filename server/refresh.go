@@ -14,8 +14,8 @@ import (
 )
 
 type pingboardData struct {
-	company         *pingboard.Company
-	usersById       map[string]pingboard.User
+	company   *pingboard.Company
+	usersById map[string]pingboard.User
 }
 
 var dateExpr = regexp.MustCompile(`([0-9]{4})-([0-9]{2})-([0-9]{2})`)
@@ -37,7 +37,7 @@ func (p *Plugin) getMattermostUsernamesByNormalisedEmail() map[string]string {
 	page := 0
 	for {
 		mmUsers, err := p.API.GetUsers(&model.UserGetOptions{
-			Page: page,
+			Page:    page,
 			PerPage: 500,
 		})
 		if err != nil {
@@ -82,8 +82,8 @@ func (p *Plugin) fetchPingboardData(apiID string, apiSecret string) *pingboardDa
 	}
 
 	return &pingboardData{
-		company:         company,
-		usersById:       pbUsersById,
+		company:   company,
+		usersById: pbUsersById,
 	}
 }
 

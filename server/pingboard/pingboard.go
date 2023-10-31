@@ -132,7 +132,6 @@ func (c *Client) setAuthToken(pingboardId string, pingboardSecret string) bool {
 	return true
 }
 
-
 func (c *Client) resolveDepartment(user userResponse, departmentsById map[string]string) string {
 	// We consider the user's department to be the first DepartmentId in the user's Links (if any) for which:
 	// * groups/<departmentId> returns a single Group and
