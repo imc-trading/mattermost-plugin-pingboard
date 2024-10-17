@@ -34,7 +34,7 @@ export default class UserAttribute extends React.PureComponent {
 
         return (
             <div>
-                <div key={`${manifest.id}_job_title`}>
+                <div key={`${manifest.id}_job_title`} style={{textWrap: "pretty"}}>
                     {messageHtmlToComponent(`👤 ${description}`)}
                 </div>
                 <div key={`${manifest.id}_manager`}>
