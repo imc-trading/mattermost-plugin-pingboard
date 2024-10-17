@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/go-resty/resty/v2"
-	"github.com/mattermost/mattermost-server/v5/plugin"
+	"github.com/mattermost/mattermost/server/public/plugin"
 )
 
 // Public types returned by this client

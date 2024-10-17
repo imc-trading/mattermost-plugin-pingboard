@@ -1,8 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import {describeTenure} from '../../dateutil';
-import {id as pluginId} from '../../manifest';
+import {describeTenure} from '@/dateutil';
+import manifest from '@/manifest';
 
 const {messageHtmlToComponent, formatText} = window.PostUtils;
 
@@ -34,19 +34,19 @@ export default class UserAttribute extends React.PureComponent {
 
         return (
             <div>
-                <div key={`${pluginId}_job_title`}>
+                <div key={`${manifest.id}_job_title`}>
                     {messageHtmlToComponent(`👤 ${description}`)}
                 </div>
-                <div key={`${pluginId}_manager`}>
+                <div key={`${manifest.id}_manager`}>
                     {messageHtmlToComponent(formatText(`⬆️ ${manager}`, {atMentions: true, emoticons: false}))}
                 </div>
-                <div key={`${pluginId}_start_date`}>
+                <div key={`${manifest.id}_start_date`}>
                     {messageHtmlToComponent(`🗓 ${tenure}`)}
                 </div>
-                <div key={`${pluginId}_phone`}>
+                <div key={`${manifest.id}_phone`}>
                     {messageHtmlToComponent(`📞 ${pingboardInfo.phone}`)}
                 </div>
-                <div key={`${pluginId}_link`}>
+                <div key={`${manifest.id}_link`}>
                     {messageHtmlToComponent(`↪ <a href=${pingboardInfo.url} target="_blank">Pingboard profile</a>`)}
                 </div>
             </div>

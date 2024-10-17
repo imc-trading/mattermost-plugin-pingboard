@@ -1,11 +1,11 @@
 import {Client4} from 'mattermost-redux/client';
 import {ClientError} from 'mattermost-redux/client/client4';
 
-import {id as pluginId} from '../manifest';
+import manifest from '@/manifest';
 
 export default class Client {
     getPingboardInfo = async (username = '') => {
-        const url = `/plugins/${pluginId}/user?username=` + username;
+        const url = `/plugins/${manifest.id}/user?username=` + username;
         const response = await fetch(url, Client4.getOptions({
             method: 'get',
         }));

@@ -1,12 +1,12 @@
 import {connect} from 'react-redux';
 import {bindActionCreators} from 'redux';
 
-import {id as pluginId} from '../../manifest';
-import {fetchAndStorePingboardInfo} from '../../actions';
+import manifest from '@/manifest';
+import {fetchAndStorePingboardInfo} from '@/actions';
 
 import UserAttribute from './user_attribute.jsx';
 
-const REDUCER = `plugins-${pluginId}`;
+const REDUCER = `plugins-${manifest.id}`;
 
 function mapStateToProps(state, ownProps) {
     let username;

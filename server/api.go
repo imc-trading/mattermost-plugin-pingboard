@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/mattermost/mattermost-server/v5/plugin"
+	"github.com/mattermost/mattermost/server/public/plugin"
 )
 
 func (p *Plugin) writeApiError(w http.ResponseWriter, statusCode int, message string) {
