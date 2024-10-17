@@ -9,6 +9,8 @@ MM_UTILITIES_DIR ?= ../mattermost-utilities
 
 export GO111MODULE=on
 
+export NODE_OPTIONS="--openssl-legacy-provider"
+
 # You can include assets this directory into the bundle. This can be e.g. used to include profile pictures.
 ASSETS_DIR ?= assets
 
@@ -102,7 +104,7 @@ ifneq ($(HAS_WEBAPP),)
 	mkdir -p dist/$(PLUGIN_ID)/webapp/dist;
 	cp -r webapp/dist/* dist/$(PLUGIN_ID)/webapp/dist/;
 endif
-	cd dist && tar -cvzf $(BUNDLE_NAME) $(PLUGIN_ID)
+	cd dist && COPYFILE_DISABLE=1 tar -cvzf $(BUNDLE_NAME) $(PLUGIN_ID)
 
 	@echo plugin built at: dist/$(BUNDLE_NAME)
 
