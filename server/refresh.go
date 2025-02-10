@@ -103,7 +103,7 @@ func (p *Plugin) resolveUsers(pbData *pingboardData, mmUsernamesByNormalisedEmai
 		if _, exists := pbNormalisedEmails[pbUserNormalisedEmail]; exists {
 			p.API.LogError(fmt.Sprintf("Found multiple Pingboard users with (normalised) email %s",
 				pbUserNormalisedEmail))
-			return nil
+			continue
 		}
 		pbNormalisedEmails[pbUserNormalisedEmail] = true
 
